@@ -63,10 +63,18 @@
         window.onkeydown = function(e) {
             startGame();
         }
+        window.touchstart = function(e) {
+            startGame();
+        }
     }
 
     function startGame() {
         window.onkeydown = function(e) {
+            velocity = FLAP_VELOCITY;
+            heptagonRotation = 0;
+            heptagonRotationDirection = Math.random() > 0.5 ? 1 : -1;
+        }
+        window.touchstart = function(e) {
             velocity = FLAP_VELOCITY;
             heptagonRotation = 0;
             heptagonRotationDirection = Math.random() > 0.5 ? 1 : -1;
@@ -186,6 +194,9 @@
 
         setTimeout(function() {
             window.onkeydown = function(e) {
+                startGame();
+            }
+            window.touchstart = function(e) {
                 startGame();
             }
         }, 500);
