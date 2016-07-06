@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Flappy Heptagon</title>
+    <style>
+    * {
+        padding: 0;
+        margin: 0;
+    }
+    
+    canvas {
+        background: #eee;
+        display: block;
+        margin: 0 auto;
+    }
+    
+    p {
+        font-family: "Courier New";
+        text-align: center;
+        margin-left: 350px;
+    }
+    </style>
+</head>
+
+<body>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <p>Author Joachim Milner 2016</p>
+    <script>
+    var canvas = document.getElementById("gameCanvas");
+    var context = canvas.getContext("2d");
+
+    const GRAVITY = 0.2;
+    const FLAP_VELOCITY = -7;
+    const HEPT_ROTATION_CHANGE = 8;
+    const OBSTACLE_DECREMENT = 2.5;
+    const OBSTACLE_WIDTH = 30;
+    const OBSTACLE_GAP_HEIGHT = 140;
+    const HEPTAGON_X = 150;
+    const HEPTAGON_RADIUS = 20;
+    var currentScore = 0;
+    var highscore = 0;
+    var velocity = 0;
+    var heptagonY = 200;
+    var heptagonRotation = 0;
+    var heptagonRotationDirection = 1;
+    var refreshIntervalId;
+    var obstacles = [];
+
+    function initTitlePane() {
+        context.fillStyle = "#99CCFF";
+        context.fillRect(150, 140, 300, 120);
+        context.fillStyle = "#000000";
+        context.strokeRect(149, 139, 302, 122);
+        context.font = "bold 30px courier new";
+        context.textAlign = "center";
+        context.fillText("Welcome to", canvas.width / 2, 170);
+        context.fillText("Flappy Heptagon", canvas.width / 2, 200);
+        context.font = "bold 16px courier new";
+        context.fillText("Press any key to start flapping", canvas.width / 2, 240);
+
+        window.onkeydown = function(e) {
+            startGame();
+        }
+    }
+
+    function startGame() {
+        window.onkeydown = function(e) {
+            velocity = FLAP_VELOCITY;
+            heptagonRotation = 0;
+            heptagonRotationDirection = Math.random() > 0.5 ? 1 : -1;
+        }
+        generateObstacle();
+        refreshIntervalId = setInterval(refresh, 10);
+    }
+
+    function drawScores() {
+        context.fillStyle = "#000000";
+        context.font = "bold 24px courier new";
+        context.textAlign = "left";
+        context.fillText("Highscore:" + highscore, 10, 20);
+        context.textAlign = "right";
+        context.fillText(currentScore, 590, 20);
+    }
+
+    function drawHeptagon() {
+        context.save();
+        if (velocity < 0) {
+            context.translate(HEPTAGON_X, heptagonY);
+            if (heptagonRotation < -40) {
+                heptagonRotationDirection = 1;
+            } else if (heptagonRotation > 40) {
+                heptagonRotationDirection = -1;
+            }
+            heptagonRotation += HEPT_ROTATION_CHANGE * heptagonRotationDirection;
+            context.rotate(heptagonRotation * Math.PI / 180);
+            context.translate(-HEPTAGON_X, -heptagonY);
+        }
+
+        var heptagonSVGString = "M 150, " + (heptagonY - 20) + " L 134, " + (heptagonY - 12) + " L 131, " + (heptagonY + 4) + " L 141, " + (heptagonY + 18) + " L 159, " + (heptagonY + 18) + " L 169, " + (heptagonY + 4) + " L 166, " + (heptagonY - 12) + " L 150, " + (heptagonY - 20);
+
+        var path = new Path2D(heptagonSVGString);
+        context.fillStyle = "#FF0000";
+        context.fill(path);
+        context.restore();
+    }
+
+    function drawAndCheckObstacles() {
+        if (obstacles[0].x + OBSTACLE_WIDTH < 0) {
+            obstacles.shift();
+        }
+        if (obstacles[obstacles.length - 1].x == 300) {
+            generateObstacle();
+        }
+        context.fillStyle = "#0000FF";
+        for (var i = 0; i < obstacles.length; i++) {
+            var obstacle = obstacles[i];
+            context.fillRect(obstacle.x, 0, OBSTACLE_WIDTH, obstacle.gapTop);
+            context.fillRect(obstacle.x, obstacle.gapBottom, OBSTACLE_WIDTH, canvas.height - obstacle.gapBottom);
+            checkCollisions(obstacles[i]);
+            obstacle.x -= OBSTACLE_DECREMENT;
+            if (obstacle.x + OBSTACLE_WIDTH < HEPTAGON_X - HEPTAGON_RADIUS && !obstacle.hasPassed) {
+                currentScore++;
+                obstacle.hasPassed = true;
+            }
+        }
+    }
+
+    function generateObstacle() {
+        var gapStart = Math.floor(Math.random() * (canvas.height - (OBSTACLE_GAP_HEIGHT + 10)));
+        if (gapStart < 10) {
+            gapStart = 10;
+        }
+        var newObstacle = {
+            x: canvas.width,
+            gapTop: gapStart,
+            gapBottom: gapStart + OBSTACLE_GAP_HEIGHT,
+            hasPassed: false,
+        }
+        obstacles.push(newObstacle);
+    }
+
+    function checkCollisions(obstacle) {
+        if (HEPTAGON_X > obstacle.x && HEPTAGON_X < obstacle.x + OBSTACLE_WIDTH) {
+            if (heptagonY - HEPTAGON_RADIUS < obstacle.gapTop || heptagonY + HEPTAGON_RADIUS > obstacle.gapBottom) {
+                initGameOver();
+            }
+        }
+    }
+
+    function setGravity() {
+        heptagonY += velocity;
+        velocity += GRAVITY;
+    }
+
+    function initGameOver() {
+        clearInterval(refreshIntervalId);
+        clearCanvas();
+
+        context.fillStyle = "#FF0000";
+        context.fillRect(150, 140, 300, 120);
+        context.fillStyle = "#000000";
+        context.strokeRect(149, 139, 302, 122);
+        context.textAlign = "center";
+        context.font = "bold 30px courier new";
+        context.fillText("GAME OVER", canvas.width / 2, 170);
+        context.font = "bold 24px courier new";
+        context.fillText("You got:" + currentScore, canvas.width / 2, 193);
+        var highscoreText;
+        if (currentScore > highscore) {
+            highscoreText = "New High Score!";
+            highscore = currentScore;
+        } else {
+            highscoreText = "Highscore:" + highscore;
+        }
+        context.fillText(highscoreText, canvas.width / 2, 217);
+        context.font = "bold 16px courier new";
+        context.fillText("Press any key to flap again", canvas.width / 2, 240);
+
+        currentScore = 0;
+        heptagonY = 200;
+        velocity = 0;
+        heptagonRotation = 0;
+        obstacles = [];
+
+        setTimeout(function() {
+            window.onkeydown = function(e) {
+                startGame();
+            }
+        }, 500);
+
+    }
+
+    function refresh() {
+        clearCanvas();
+        drawHeptagon();
+        drawAndCheckObstacles();
+        drawScores();
+        setGravity();
+    }
+
+    function clearCanvas() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    initTitlePane();
+    </script>
+</body>
+
+</html>
