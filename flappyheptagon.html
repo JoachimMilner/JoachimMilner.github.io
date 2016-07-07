@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <meta charset="utf-8" name="viewport" content="width=device-width">
+    <meta charset="utf-8" name="viewport">
     <title>Flappy Heptagon</title>
     <style>
     * {
@@ -38,12 +38,10 @@
     const HEPTAGON_RADIUS = 20;
     var canvas = document.getElementById("gameCanvas");
     var context = canvas.getContext("2d");
-    var currentScore = 0;
-    var highscore = 0;
+    var currentScore = 0, highscore = 0;
     var velocity = 0;
     var heptagonY = 200;
-    var heptagonRotation = 0;
-    var heptagonRotationDirection = 1;
+    var heptagonRotation = 0, heptagonRotationDirection = 1;
     var refreshIntervalId;
     var obstacles = [];
 
@@ -62,8 +60,8 @@
     }
 
     function startGame() {
+    	generateObstacle();
         setFlapListener();
-        generateObstacle();
         refreshIntervalId = setInterval(refresh, 10);
     }
 
@@ -154,7 +152,6 @@
     function initGameOver() {
         clearInterval(refreshIntervalId);
         clearCanvas();
-
         context.fillStyle = "#FF0000";
         context.fillRect(150, 140, 300, 120);
         context.fillStyle = "#000000";
@@ -184,7 +181,6 @@
         setTimeout(function() {
             setStartGameListener();
         }, 500);
-
     }
 
     function refresh() {
@@ -200,23 +196,17 @@
     }
 
     function setStartGameListener() {
-        window.onkeydown = function(e) {
-            startGame();
-        }
+        removeEventListener("keydown", flapEvent);
+        removeEventListener("touchstart", flapEvent);
+        addEventListener("keydown", startGame);
         addEventListener("touchstart", startGame);
-/*        window.touchstart = function(e) {
-            startGame();
-        }*/
     }
 
     function setFlapListener() {
-        window.onkeydown = function(e) {
-            flapEvent();
-        }
+        removeEventListener("keydown", startGame);
+        removeEventListener("touchstart", startGame);
+        addEventListener("keydown", flapEvent);
         addEventListener("touchstart", flapEvent);
-/*        window.touchstart = function(e) {
-            flapEvent();
-        }*/
     }
 
     initTitlePane();
